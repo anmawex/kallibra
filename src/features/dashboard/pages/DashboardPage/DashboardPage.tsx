@@ -8,7 +8,8 @@ import type { Transaction } from '@/features/transactions';
 
 export const DashboardPage = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
+
+  const isReconciliationModalOpen = !!selectedTransaction;
 
   const {
     filteredTransactions,
@@ -22,15 +23,20 @@ export const DashboardPage = () => {
     transactions, // Need all transactions for matching context
   } = useTransactions();
 
+
   const handleReconcile = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    setIsReconciliationModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setSelectedTransaction(null);
   };
 
   const handleReconciliationComplete = (transactionIds: string[]) => {
-    bulkUpdateStatus(transactionIds, 'reconciled');
-    setIsReconciliationModalOpen(false);
-    setSelectedTransaction(null);
+    transactionIds.forEach((id) => {
+      updateTransactionStatus(id, 'reconciled');
+    });
+    handleClose();
   };
 
 
@@ -61,7 +67,7 @@ export const DashboardPage = () => {
 
       <ReconciliationModal
         isOpen={isReconciliationModalOpen}
-        onClose={() => setIsReconciliationModalOpen(false)}
+        onClose={() => handleClose()}
         transaction={selectedTransaction}
         candidates={transactions}
         onReconcile={handleReconciliationComplete}
