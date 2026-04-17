@@ -1,12 +1,25 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-export function ScrollToTop() {
+interface ScrollToTopProps {
+  behavior?: 'auto' | 'smooth';
+  excludePaths?: string[]; 
+}
+
+export function ScrollToTop(
+  {
+    behavior = 'smooth',
+    excludePaths = []
+  }: ScrollToTopProps = {}
+) {
   const { pathname } = useLocation();
 
+  // Scroll to top when pathname changes
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (excludePaths.includes(pathname)) return;
+    
+    window.scrollTo({ top: 0, behavior });
+  },[pathname, behavior, excludePaths]);
 
   return null;
 }

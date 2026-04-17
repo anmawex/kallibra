@@ -5,7 +5,7 @@ export { Header, StatsCard, RecentActivity } from './components';
 export { DashboardPage } from './pages/DashboardPage';
 
 // Hooks
-export { useDashboardData } from './hooks';
+// export { useDashboardData } from './hooks';
 
 // Types
 export type { DashboardStats, RecentActivityItem, DashboardState } from './types/dashboard.types';
