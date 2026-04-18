@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+// import { useForm } from 'react-hook-form'; // COMENTADO: Usando controlled form manual con useState
+// import { zodResolver } from '@hookform/resolvers/zod'; // COMENTADO: No necesario para form manual
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '../../../../shared/components';
 import { Button } from '../../../../shared/components/button';
 import { useAuth } from '../../hooks/useAuth';
-import { loginSchema, type LoginFormData } from '../../validators/auth.validators';
+// import { loginSchema, type LoginFormData } from '../../validators/auth.validators'; // COMENTADO
 import './LoginForm.css';
 
 export const LoginForm: React.FC = () => {
@@ -16,23 +16,61 @@ export const LoginForm: React.FC = () => {
   const { login, isLoading, error, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      rememberMe: false,
-    },
+  // === CONTROLLED FORM MANUAL CON useState ===
+  // Estado para los valores del formulario
+  // const [formData, setFormData] = useState({
+  //   email: '',
+  //   password: '',
+  // });
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  // Estado para los errores de validación
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+
+  // Handler genérico para cambios en inputs de texto
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Limpiar error al escribir
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  // Validación manual (puedes usar zod aquí si quieres)
+  const validate = (): boolean => {
+    const newErrors: { email?: string; password?: string } = {};
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'El email es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevenir submit nativo del form
+
+    if (!validate()) return; // No enviar si hay errores
+
     try {
       clearError();
-      await login(data);
+      await login(formData); // Usar formData del estado
       navigate('/dashboard');
     } catch (error) {
       // Error is handled by the store
@@ -41,7 +79,7 @@ export const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
+    <form onSubmit={onSubmit} className="login-form" noValidate>
       <div className="login-form-header">
         <h1 className="login-form-title">{t('auth.login.title')}</h1>
         <p className="login-form-subtitle">
@@ -69,11 +107,14 @@ export const LoginForm: React.FC = () => {
 
       <div className="login-form-fields">
         <Input
-          {...register('email')}
+          // {...register('email')} // REEMPLAZADO POR controlled manual:
+          name="email"
+          // value={formData.email}
+          onChange={handleChange}
           type="email"
           label={t('auth.login.email')}
           placeholder={t('auth.login.emailPlaceholder')}
-          error={errors.email?.message}
+          error={errors.email} // Ya no es errors.email?.message
           fullWidth
           autoComplete="email"
           required
@@ -81,11 +122,14 @@ export const LoginForm: React.FC = () => {
 
         <div className="password-field-wrapper">
           <Input
-            {...register('password')}
+            // {...register('password')} // REEMPLAZADO POR controlled manual:
+            name="password"
+            // value={formData.password}
+            onChange={handleChange}
             type={showPassword ? 'text' : 'password'}
             label={t('auth.login.password')}
             placeholder={t('auth.login.passwordPlaceholder')}
-            error={errors.password?.message}
+            error={errors.password} // Ya no es errors.password?.message
             fullWidth
             autoComplete="current-password"
             required
@@ -135,14 +179,6 @@ export const LoginForm: React.FC = () => {
         </div>
 
         <div className="login-form-options">
-          <label className="remember-me-label">
-            <input
-              {...register('rememberMe')}
-              type="checkbox"
-              className="remember-me-checkbox"
-            />
-            <span>{t('auth.login.rememberMe')}</span>
-          </label>
           <a href="/forgot-password" className="forgot-password-link">
             {t('auth.login.forgotPassword')}
           </a>
